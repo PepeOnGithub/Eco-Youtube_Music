@@ -21,8 +21,9 @@ class EchoPlaylistContinuationEndpoint(override val api: YoutubeiApi) : ApiEndpo
             }
             postWithBody(YoutubeiPostBody.BASE.getPostBody(api))
         }
-        val parsed = response.body<YtContinuation>().onResponseReceivedActions.first()
-            .appendContinuationItemsAction.continuationItems
+        val parsed = response.body<YtContinuation>().onResponseReceivedActions
+            ?.firstOrNull()?.appendContinuationItemsAction?.continuationItems
+            ?: emptyList()
 
         val cont = parsed.lastOrNull()
             ?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token
