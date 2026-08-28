@@ -37,10 +37,14 @@ class EchoEnhancedSongEndpoint(
         
         if (ytmTrack != null) {
             // Check if we need legacy data for missing extras (lyricsId, relatedId, isLiked)
-            val needsLegacyExtras = ytmTrack.extras["lyricsId"] == null || 
+            // or a missing artist - ytm-kt's artist parsing is more prone to breaking against
+            // YouTube's current response shape than the legacy endpoint's, which has its own
+            // independent fallback (menu icon type instead of browse page type).
+            val needsLegacyExtras = ytmTrack.extras["lyricsId"] == null ||
                                      ytmTrack.extras["relatedId"] == null ||
-                                     ytmTrack.extras["isLiked"] == null
-            
+                                     ytmTrack.extras["isLiked"] == null ||
+                                     ytmTrack.artists.isEmpty()
+
             if (needsLegacyExtras) {
                 println("ytm-kt track missing extras, fetching from legacy endpoint")
                 val legacyTrack = runCatching {
