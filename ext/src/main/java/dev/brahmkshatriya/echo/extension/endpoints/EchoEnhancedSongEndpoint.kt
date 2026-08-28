@@ -39,11 +39,16 @@ class EchoEnhancedSongEndpoint(
             // Check if we need legacy data for missing extras (lyricsId, relatedId, isLiked)
             // or a missing artist - ytm-kt's artist parsing is more prone to breaking against
             // YouTube's current response shape than the legacy endpoint's, which has its own
-            // independent fallback (menu icon type instead of browse page type).
+            // independent fallback (menu icon type instead of browse page type). When ytm-kt's
+            // own "next" parsing fails internally it silently falls back to the raw "player"
+            // endpoint, which only knows a channel ID - no display name - so the artist comes
+            // back named literally "Unknown" (Convertors.kt's null-name fallback) rather than
+            // the list simply being empty.
             val needsLegacyExtras = ytmTrack.extras["lyricsId"] == null ||
                                      ytmTrack.extras["relatedId"] == null ||
                                      ytmTrack.extras["isLiked"] == null ||
-                                     ytmTrack.artists.isEmpty()
+                                     ytmTrack.artists.isEmpty() ||
+                                     ytmTrack.artists.any { it.name == "Unknown" }
 
             if (needsLegacyExtras) {
                 println("ytm-kt track missing extras, fetching from legacy endpoint")
@@ -130,11 +135,11 @@ class EchoEnhancedSongEndpoint(
             // Prefer ytm album, fallback to legacy
             album = ytmTrack.album ?: legacyTrack?.album,
             
-            // Prefer ytm artists if non-empty, fallback to legacy then original
-            artists = if (ytmTrack.artists.isNotEmpty()) 
-                ytmTrack.artists 
-            else 
-                legacyTrack?.artists ?: fallbackTrack.artists,
+            // Prefer ytm artists if non-empty and actually named, fallback to legacy then original
+            artists = if (ytmTrack.artists.isNotEmpty() && ytmTrack.artists.none { it.name == "Unknown" })
+                ytmTrack.artists
+            else
+                legacyTrack?.artists?.takeIf { it.isNotEmpty() } ?: fallbackTrack.artists,
             
             // Add streamables - THIS WAS MISSING!
             streamables = streamables,
