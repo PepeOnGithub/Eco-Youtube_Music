@@ -51,6 +51,7 @@ class ExtensionComponents(
     val artistMoreEndpoint = EchoArtistMoreEndpoint(api)
     val libraryEndpoint = EchoLibraryEndPoint(api)
     val songEndpoint = EchoSongEndPoint(api)
+    val songRadioEndpoint = EchoSongRadioEndpoint(api)
     val songRelatedEndpoint = EchoSongRelatedEndpoint(api)
     val playlistEndpoint = EchoPlaylistEndpoint(api)
     val lyricsEndpoint = EchoLyricsEndPoint(api)
@@ -91,7 +92,7 @@ class ExtensionComponents(
     }
 
     val radioGenerator by lazy {
-        RadioGenerator(api, json, thumbnailQuality, trackCache)
+        RadioGenerator(api, songRadioEndpoint, json, thumbnailQuality, trackCache)
     }
 
     val playlistManager by lazy {

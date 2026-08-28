@@ -62,8 +62,13 @@ open class EchoSongEndPoint(override val api: YoutubeiApi) : ApiEndpoint() {
         val relatedBrowseId: String? =
             tabs.getOrNull(2)?.tabRenderer?.endpoint?.browseEndpoint?.browseId
 
+        // Not every tab's `content` carries a musicQueueRenderer (e.g. lyrics/related tabs
+        // have their own differently-shaped content), so search for the one that does
+        // instead of assuming it's always tabs[0].
+        val queueContent: YoutubeiNextResponse.MusicQueueRendererContent = tabs
+            .firstNotNullOf { it.tabRenderer.content?.musicQueueRenderer?.content }
         val video: YoutubeiNextResponse.PlaylistPanelVideoRenderer =
-            tabs[0].tabRenderer.content!!.musicQueueRenderer.content!!.playlistPanelRenderer.contents.first().playlistPanelVideoRenderer!!
+            queueContent.playlistPanelRenderer.contents.first().playlistPanelVideoRenderer!!
 
         val title: String = video.title.first_text
         val isLiked =
@@ -216,7 +221,7 @@ data class YoutubeiNextResponse(
     class TabRendererEndpoint(val browseEndpoint: BrowseEndpoint)
 
     @Serializable
-    class Content(val musicQueueRenderer: MusicQueueRenderer)
+    class Content(val musicQueueRenderer: MusicQueueRenderer? = null)
 
     @Serializable
     class MusicQueueRenderer(
@@ -252,14 +257,28 @@ data class YoutubeiNextResponse(
     class MusicQueueRendererContent(val playlistPanelRenderer: PlaylistPanelRenderer)
 
     @Serializable
-    class PlaylistPanelRenderer(val contents: List<ResponseRadioItem>)
+    class PlaylistPanelRenderer(
+        val contents: List<ResponseRadioItem>,
+        val continuations: List<Continuation>? = null
+    )
+
+    @Serializable
+    class Continuation(
+        val nextContinuationData: ContinuationData? = null,
+        val nextRadioContinuationData: ContinuationData? = null
+    ) {
+        val data: ContinuationData? get() = nextContinuationData ?: nextRadioContinuationData
+    }
+
+    @Serializable
+    class ContinuationData(val continuation: String)
 
     @Serializable
     data class ResponseRadioItem(
         val playlistPanelVideoRenderer: PlaylistPanelVideoRenderer?,
         val playlistPanelVideoWrapperRenderer: PlaylistPanelVideoWrapperRenderer?
     ) {
-        private fun getRenderer(): PlaylistPanelVideoRenderer {
+        fun getRenderer(): PlaylistPanelVideoRenderer {
             if (playlistPanelVideoRenderer != null) {
                 return playlistPanelVideoRenderer
             }
@@ -370,5 +389,13 @@ data class YoutubeiNextResponse(
 
     @Serializable
     data class MenuIcon(val iconType: String)
+}
+
+@Serializable
+data class YoutubeiNextContinuationResponse(
+    val continuationContents: Contents
+) {
+    @Serializable
+    data class Contents(val playlistPanelContinuation: YoutubeiNextResponse.PlaylistPanelRenderer)
 }
 
