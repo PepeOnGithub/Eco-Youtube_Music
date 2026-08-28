@@ -31,11 +31,13 @@ jobs:
           id=$(grep '^extId=' gradle.properties | cut -d'=' -f2)
           version=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "APP_PATH=app/build/${id}-debug-${version}.eapk" >> $GITHUB_ENV
+          echo "RELEASE_APP_PATH=app/build/${id}-debug.eapk" >> $GITHUB_ENV
 
       - name: Build debug (no signing secrets needed)
         run: |
           ./gradlew assembleDebug
           cp app/build/outputs/apk/debug/app-debug.apk "${{ env.APP_PATH }}"
+          cp app/build/outputs/apk/debug/app-debug.apk "${{ env.RELEASE_APP_PATH }}"
 
       - name: Upload eapk
         uses: actions/upload-artifact@v4
@@ -47,7 +49,7 @@ jobs:
         with:
           tag_name: debug-build
           name: Debug build (unsigned, no secrets required)
-          body: Auto-updated on every push to main. Not signed with a stable key - reinstall (not update) if this replaces a previous install signed differently.
-          files: ${{ env.APP_PATH }}
+          body: Auto-updated on every push to main (currently ${{ github.sha }}). Not signed with a stable key - reinstall (not update) if this replaces a previous install signed differently.
+          files: ${{ env.RELEASE_APP_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
